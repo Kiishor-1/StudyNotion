@@ -5,9 +5,7 @@ const SubSection = require("../models/Subsection")
 const User = require("../models/User")
 const { uploadImageToCloudinary } = require("../utils/imageUploader")
 const CourseProgress = require("../models/CourseProgress")
-const { convertSecondsToDuration } = require("../utils/secToDuration");
-require('dotenv').config();
-
+const { convertSecondsToDuration } = require("../utils/secToDuration")
 // Function to create a new course
 exports.createCourse = async (req, res) => {
   try {
@@ -453,21 +451,12 @@ exports.deleteCourse = async (req, res) => {
     }
 
     // Unenroll students from the course
-    const studentsEnrolled = course.studentsEnrolled
+    const studentsEnrolled = course.studentsEnroled
     for (const studentId of studentsEnrolled) {
       await User.findByIdAndUpdate(studentId, {
         $pull: { courses: courseId },
       })
     }
-
-    const courseCategory = course.category;
-    await Category.findByIdAndUpdate(
-      courseCategory._id,
-      {
-        $pull: {
-          courses: course._id,
-        }
-      })
 
     // Delete sections and sub-sections
     const courseSections = course.courseContent
@@ -499,87 +488,5 @@ exports.deleteCourse = async (req, res) => {
       message: "Server error",
       error: error.message,
     })
-  }
-}
-
-
-exports.removeFromCart = async (req, res) => {
-  try {
-    const { courseId } = req.body;
-    const userId = req.user.id;
-
-    const course = await Course.findById(courseId);
-    if (!course) {
-      return res.status(404).json({
-        success: false,
-        message: "No such course found",
-      });
-    }
-
-    const user = await User.findById(userId);
-    if (!user.itemsInCart.includes(courseId)) {
-      return res.status(403), json({
-        success: false,
-        message: "No Such Item In Your Cart To Remove"
-      })
-    }
-
-    const updatedUser = await User.findByIdAndUpdate(
-      userId,
-      {
-        $pull: {
-          itemsInCart: courseId,
-        }
-      });
-
-    // console.log(updatedUser);
-
-    return res.status(200).json({
-      success: true,
-      message: "Item Removed From Your Cart",
-    })
-
-  } catch (err) {
-    console.log(err);
-  }
-}
-exports.addToCart = async (req, res) => {
-  try {
-    const { courseId } = req.body;
-    const userId = req.user.id;
-
-    const course = await Course.findById(courseId);
-    if (!course) {
-      return res.status(404).json({
-        success: false,
-        message: "No such course found",
-      });
-    }
-
-    const user = await User.findById(userId);
-    if (user.itemsInCart.includes(courseId)) {
-      return res.status(403), json({
-        success: false,
-        message: "Item Already In Cart"
-      })
-    }
-
-    const updatedUser = await User.findByIdAndUpdate(
-      userId,
-      {
-        $push: {
-          itemsInCart: courseId,
-        }
-      });
-
-    // console.log(updatedUser);
-
-    return res.status(200).json({
-      success: true,
-      message: "Item Added To Your Cart",
-    })
-
-  } catch (err) {
-    console.log(err);
   }
 }

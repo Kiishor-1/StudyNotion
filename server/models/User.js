@@ -67,26 +67,11 @@ const userSchema = new mongoose.Schema(
         ref: "courseProgress",
       },
     ],
-    itemsInCart: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Course"
-      },
-    ]
 
     // Add timestamps for when the document is created and last modified
   },
   { timestamps: true }
 )
-
-userSchema.post("findOneAndDelete", async (User) => {
-  if (User?.courses?.length) {
-    await Course.deleteMany({ _id: { $in: User.courses } });
-  }
-  if (User?.courseProgress?.length) {
-    await Course.deleteMany({ _id: { $in: User.courseProgress } });
-  }
-})
 
 // Export the Mongoose model for the user schema, using the name "user"
 module.exports = mongoose.model("user", userSchema)

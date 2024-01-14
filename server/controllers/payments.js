@@ -4,7 +4,6 @@ const crypto = require("crypto")
 const User = require("../models/User")
 const mailSender = require("../utils/mailSender")
 const mongoose = require("mongoose")
-require('dotenv').config();
 const {
   courseEnrollmentEmail,
 } = require("../mail/templates/courseEnrollmentEmail")
@@ -36,7 +35,7 @@ exports.capturePayment = async (req, res) => {
 
       // Check if the user is already enrolled in the course
       const uid = new mongoose.Types.ObjectId(userId)
-      if (course.studentsEnrolled.includes(uid)) {
+      if (course.studentsEnroled.includes(uid)) {
         return res
           .status(200)
           .json({ success: false, message: "Student is already Enrolled" })
@@ -152,7 +151,7 @@ const enrollStudents = async (courses, userId, res) => {
       // Find the course and enroll the student in it
       const enrolledCourse = await Course.findOneAndUpdate(
         { _id: courseId },
-        { $push: { studentsEnrolled: userId } },
+        { $push: { studentsEnroled: userId } },
         { new: true }
       )
 

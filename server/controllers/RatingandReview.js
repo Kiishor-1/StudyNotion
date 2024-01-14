@@ -12,7 +12,7 @@ exports.createRating = async (req, res) => {
 
     const courseDetails = await Course.findOne({
       _id: courseId,
-      studentsEnrolled: { $elemMatch: { $eq: userId } },
+      studentsEnroled: { $elemMatch: { $eq: userId } },
     })
 
     if (!courseDetails) {
@@ -61,6 +61,7 @@ exports.createRating = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Internal server error",
+      error: error.message,
     })
   }
 }

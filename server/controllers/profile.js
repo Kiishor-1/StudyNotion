@@ -1,6 +1,5 @@
 const Profile = require("../models/Profile")
 const CourseProgress = require("../models/CourseProgress")
-require('dotenv').config();
 
 const Course = require("../models/Course")
 const User = require("../models/User")
@@ -76,7 +75,7 @@ exports.deleteAccount = async (req, res) => {
     for (const courseId of user.courses) {
       await Course.findByIdAndUpdate(
         courseId,
-        { $pull: { studentsEnrolled: id } },
+        { $pull: { studentsEnroled: id } },
         { new: true }
       )
     }
@@ -215,7 +214,7 @@ exports.instructorDashboard = async (req, res) => {
     const courseDetails = await Course.find({ instructor: req.user.id })
 
     const courseData = courseDetails.map((course) => {
-      const totalStudentsEnrolled = course.studentsEnrolled.length
+      const totalStudentsEnrolled = course.studentsEnroled.length
       const totalAmountGenerated = totalStudentsEnrolled * course.price
 
       // Create a new object with the additional fields
