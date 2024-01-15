@@ -25,7 +25,7 @@ export default function RenderSteps() {
 
   return (
     <>
-      <div className="relative mb-8 flex w-full justify-center">
+      <div className="relative mb-8 flex w-full justify-center ">
         {steps.map((item, idx) => (
           <div key={idx} className="flex items-center">
             <div className="flex flex-col items-center" key={item.id} >
@@ -44,7 +44,7 @@ export default function RenderSteps() {
 
             </div>
             {item.id !== steps.length && (
-              <div className={`w-[10rem] border-dashed border-b-2 ${step > item.id ? "border-yellow-50" : "border-richblack-500"
+              <div className={`lg:w-[12rem] w-[8rem] border-dashed border-b-2 ${step > item.id ? "border-yellow-50" : "border-richblack-500"
                 }`}></div>
             )}
           </div>
