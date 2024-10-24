@@ -11,7 +11,7 @@ import RatingStars from "../components/Common/RatingStars"
 import CourseAccordionBar from "../components/core/Course/CourseAccordionBar"
 import CourseDetailsCard from "../components/core/Course/CourseDetailsCard"
 import { formatDate } from "../services/formatDate"
-import {  fetchCourseDetails } from "../services/operations/courseDetailsAPI"
+import { fetchCourseDetails } from "../services/operations/courseDetailsAPI"
 import { BuyCourse } from "../services/operations/studentFeaturesAPI"
 import GetAvgRating from "../utils/avgRating"
 import Error from "./Error"
@@ -37,7 +37,7 @@ function CourseDetails() {
   const [confirmationModal, setConfirmationModal] = useState(null)
   useEffect(() => {
     // Calling fetchCourseDetails fucntion to fetch the details
-    ;(async () => {
+    ; (async () => {
       try {
         const res = await fetchCourseDetails(courseId)
         // console.log("course details res: ", res)
@@ -101,12 +101,14 @@ function CourseDetails() {
     courseContent,
     ratingAndReviews,
     instructor,
-    studentsEnrolled,
+    studentsEnroled,
     createdAt,
   } = response.data?.courseDetails
 
+// console.log('students enrolled', studentsEnrolled)
+
   const handleBuyCourse = () => {
-    if(user && user?.accountType === ACCOUNT_TYPE.INSTRUCTOR){
+    if (user && user?.accountType === ACCOUNT_TYPE.INSTRUCTOR) {
       toast.error("Instructor cannot buy courses");
       return;
     }
@@ -145,7 +147,7 @@ function CourseDetails() {
   }
 
 
-  
+
 
   if (paymentLoading) {
     // console.log("payment loading")
@@ -183,7 +185,7 @@ function CourseDetails() {
                 <span className="text-yellow-25">{avgReviewCount}</span>
                 <RatingStars Review_Count={avgReviewCount} Star_Size={24} />
                 <span>{`(${ratingAndReviews.length || 0} reviews)`}</span>
-                <span>{`${studentsEnrolled.length || 0} students enrolled`}</span>
+                <span>{`${studentsEnroled.length || 0} students enrolled`}</span>
               </div>
               <div>
                 <p className="">
