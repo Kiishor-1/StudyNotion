@@ -6,7 +6,6 @@ export const contactUs = async (data) => {
     let result = null;
     try {
         const response = await apiConnector("POST", contactusEndpoint.CONTACT_US_API,{data});
-        // console.log("contact responsse....",response);
         if (!response?.data?.success) {
             throw new Error("Unable To Contact")
         }

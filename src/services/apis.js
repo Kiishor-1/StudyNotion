@@ -42,8 +42,8 @@ export const courseEndpoints = {
     BASE_URL + "/course/getFullCourseDetails",
   LECTURE_COMPLETION_API: BASE_URL + "/course/updateCourseProgress",
   CREATE_RATING_API: BASE_URL + "/course/createRating",
-  ADD_TO_CART_API : BASE_URL + "/course/addToCart",
-  REMOVE_FROM_CART_API : BASE_URL + "/course/removeFromCart",
+  ADD_TO_CART_API: BASE_URL + "/course/addToCart",
+  REMOVE_FROM_CART_API: BASE_URL + "/course/removeFromCart",
 }
 
 // RATINGS AND REVIEWS
@@ -71,4 +71,10 @@ export const settingsEndpoints = {
   UPDATE_PROFILE_API: BASE_URL + "/profile/updateProfile",
   CHANGE_PASSWORD_API: BASE_URL + "/auth/changepassword",
   DELETE_PROFILE_API: BASE_URL + "/profile/deleteProfile",
+}
+
+export const botEndpoints = {
+  CHAT_WITH_BOT: BASE_URL + "/bot/chat",
+  CREATE_SUPPORT_TICKET: BASE_URL + "/bot/tickets",
+  FETCH_FAQs: BASE_URL + '/bot/faqs'
 }

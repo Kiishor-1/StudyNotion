@@ -1,7 +1,9 @@
-// Import necessary modules
 const Section = require("../models/Section")
 const SubSection = require("../models/Subsection")
+const Course = require("../models/Course")
+const { compactJoin } = require("../utils/aiUtils")
 const { uploadImageToCloudinary } = require("../utils/imageUploader")
+const { upsertChunk, updateChunk, deleteChunk } = require("../utils/query")
 
 // Create a new sub-section for a given section
 exports.createSubSection = async (req, res) => {
@@ -16,33 +18,56 @@ exports.createSubSection = async (req, res) => {
         .status(404)
         .json({ success: false, message: "All Fields are Required" })
     }
-    console.log(video)
+
 
     // Upload the video file to Cloudinary
     const uploadDetails = await uploadImageToCloudinary(
       video,
       process.env.FOLDER_NAME
     )
-    console.log(uploadDetails)
-    // Create a new sub-section with the necessary information
-    const SubSectionDetails = await SubSection.create({
-      title: title,
+
+    // Create subsection
+    const subSectionDetails = await SubSection.create({
+      title,
       timeDuration: `${uploadDetails.duration}`,
-      description: description,
+      description,
       videoUrl: uploadDetails.secure_url,
     })
 
     // Update the corresponding section with the newly created sub-section
     const updatedSection = await Section.findByIdAndUpdate(
       { _id: sectionId },
-      { $push: { subSection: SubSectionDetails._id } },
+      { $push: { subSection: subSectionDetails._id } },
       { new: true }
     ).populate("subSection")
 
-    // Return the updated section in the response
+    // Fetch course to which this section belongs
+    const course = await Course.findOne({ courseContent: sectionId })
+    const courseId = course ? String(course._id) : null
+    const courseName = course ? course.courseName : null
+
+    // Upsert embedding
+    await upsertChunk({
+      text: compactJoin([
+        `Course: ${courseName}`,
+        `Section: ${updatedSection.sectionName}`,
+        `Lecture: ${subSectionDetails.title}`,
+        `Summary: ${subSectionDetails.description}`,
+      ]),
+      metadata: {
+        sourceType: "subsection",
+        sourceId: String(subSectionDetails._id),
+        subSectionId: String(subSectionDetails._id),
+        subSectionTitle: subSectionDetails.title,
+        sectionId: String(updatedSection._id),
+        sectionName: updatedSection.sectionName,
+        courseId,
+        courseName,
+      },
+    })
+
     return res.status(200).json({ success: true, data: updatedSection })
   } catch (error) {
-    // Handle any errors that may occur during the process
     console.error("Error creating new sub-section:", error)
     return res.status(500).json({
       success: false,
@@ -64,13 +89,9 @@ exports.updateSubSection = async (req, res) => {
       })
     }
 
-    if (title !== undefined) {
-      subSection.title = title
-    }
+    if (title !== undefined) subSection.title = title
+    if (description !== undefined) subSection.description = description
 
-    if (description !== undefined) {
-      subSection.description = description
-    }
     if (req.files && req.files.video !== undefined) {
       const video = req.files.video
       const uploadDetails = await uploadImageToCloudinary(
@@ -83,12 +104,30 @@ exports.updateSubSection = async (req, res) => {
 
     await subSection.save()
 
-    // find updated section and return it
-    const updatedSection = await Section.findById(sectionId).populate(
-      "subSection"
-    )
+    const updatedSection = await Section.findById(sectionId).populate("subSection")
+    const course = await Course.findOne({ courseContent: sectionId })
+    const courseId = course ? String(course._id) : null
+    const courseName = course ? course.courseName : null
 
-    console.log("updated section", updatedSection)
+    // Update embedding
+    await updateChunk({
+      text: compactJoin([
+        `Course: ${courseName}`,
+        `Section: ${updatedSection.sectionName}`,
+        `Lecture: ${subSection.title}`,
+        `Summary: ${subSection.description}`,
+      ]),
+      metadata: {
+        sourceType: "subsection",
+        sourceId: String(subSection._id),
+        subSectionId: String(subSection._id),
+        subSectionTitle: subSection.title,
+        sectionId: String(updatedSection._id),
+        sectionName: updatedSection.sectionName,
+        courseId,
+        courseName,
+      },
+    })
 
     return res.json({
       success: true,
@@ -107,26 +146,27 @@ exports.updateSubSection = async (req, res) => {
 exports.deleteSubSection = async (req, res) => {
   try {
     const { subSectionId, sectionId } = req.body
+
     await Section.findByIdAndUpdate(
       { _id: sectionId },
-      {
-        $pull: {
-          subSection: subSectionId,
-        },
-      }
+      { $pull: { subSection: subSectionId } }
     )
-    const subSection = await SubSection.findByIdAndDelete({ _id: subSectionId })
 
+    const subSection = await SubSection.findByIdAndDelete({ _id: subSectionId })
     if (!subSection) {
       return res
         .status(404)
         .json({ success: false, message: "SubSection not found" })
     }
 
-    // find updated section and return it
-    const updatedSection = await Section.findById(sectionId).populate(
-      "subSection"
-    )
+    const updatedSection = await Section.findById(sectionId).populate("subSection")
+
+    await deleteChunk({
+      metadata: {
+        sourceType: "subsection",
+        sourceId: String(subSectionId),
+      }
+    })
 
     return res.json({
       success: true,

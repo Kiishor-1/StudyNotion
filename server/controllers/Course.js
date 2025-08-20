@@ -6,6 +6,8 @@ const User = require("../models/User")
 const { uploadImageToCloudinary } = require("../utils/imageUploader")
 const CourseProgress = require("../models/CourseProgress")
 const { convertSecondsToDuration } = require("../utils/secToDuration")
+const { upsertChunk, updateChunk, deleteChunk } = require("../utils/query")
+const { compactJoin } = require("../utils/aiUtils")
 // Function to create a new course
 exports.createCourse = async (req, res) => {
   try {
@@ -29,9 +31,6 @@ exports.createCourse = async (req, res) => {
     // Convert the tag and instructions from stringified Array to Array
     const tag = JSON.parse(_tag)
     const instructions = JSON.parse(_instructions)
-
-    console.log("tag", tag)
-    console.log("instructions", instructions)
 
     // Check if any of the required fields are missing
     if (
@@ -77,7 +76,6 @@ exports.createCourse = async (req, res) => {
       thumbnail,
       process.env.FOLDER_NAME
     )
-    console.log(thumbnailImage)
     // Create a new course with the given details
     const newCourse = await Course.create({
       courseName,
@@ -105,7 +103,7 @@ exports.createCourse = async (req, res) => {
       { new: true }
     )
     // Add the new course to the Categories
-    const categoryDetails2 = await Category.findByIdAndUpdate(
+    await Category.findByIdAndUpdate(
       { _id: category },
       {
         $push: {
@@ -114,7 +112,23 @@ exports.createCourse = async (req, res) => {
       },
       { new: true }
     )
-    console.log("HEREEEEEEEE", categoryDetails2)
+
+    await upsertChunk({
+      text: compactJoin([newCourse?.courseName, newCourse?.courseDescription, newCourse?.whatYouWillLearn]),
+      metadata: {
+        sourceType: "course",
+        sourceId: String(newCourse._id),
+        courseId: String(newCourse._id),
+        courseName: newCourse.courseName,
+        categoryId: categoryDetails ? String(categoryDetails._id) : undefined,
+        categoryName: categoryDetails?.name,
+        tags: Array.isArray(tag) ? tag : [],
+        price: newCourse.price,
+        status: newCourse.status
+      },
+      scope: "public",
+    });
+
     // Return the new course and a success message
     res.status(200).json({
       success: true,
@@ -144,7 +158,6 @@ exports.editCourse = async (req, res) => {
 
     // If Thumbnail Image is found, update it
     if (req.files) {
-      console.log("thumbnail update")
       const thumbnail = req.files.thumbnailImage
       const thumbnailImage = await uploadImageToCloudinary(
         thumbnail,
@@ -184,6 +197,22 @@ exports.editCourse = async (req, res) => {
         },
       })
       .exec()
+
+    await updateChunk({
+      text: compactJoin([updatedCourse?.courseName, updatedCourse?.courseDescription, updatedCourse?.whatYouWillLearn]),
+      metadata: {
+        sourceType: "course",
+        sourceId: String(updatedCourse._id),
+        courseId: String(updatedCourse._id),
+        courseName: updatedCourse.courseName,
+        categoryId: updatedCourse.category ? String(updatedCourse.category._id) : undefined,
+        categoryName: updatedCourse.category?.name,
+        tags: Array.isArray(updatedCourse.tag) ? updatedCourse.tag : [],
+        price: updatedCourse.price,
+        status: updatedCourse.status,
+      }
+    })
+
 
     res.json({
       success: true,
@@ -229,58 +258,7 @@ exports.getAllCourses = async (req, res) => {
     })
   }
 }
-// Get One Single Course Details
-// exports.getCourseDetails = async (req, res) => {
-//   try {
-//     const { courseId } = req.body
-//     const courseDetails = await Course.findOne({
-//       _id: courseId,
-//     })
-//       .populate({
-//         path: "instructor",
-//         populate: {
-//           path: "additionalDetails",
-//         },
-//       })
-//       .populate("category")
-//       .populate("ratingAndReviews")
-//       .populate({
-//         path: "courseContent",
-//         populate: {
-//           path: "subSection",
-//         },
-//       })
-//       .exec()
-//     // console.log(
-//     //   "###################################### course details : ",
-//     //   courseDetails,
-//     //   courseId
-//     // );
-//     if (!courseDetails || !courseDetails.length) {
-//       return res.status(400).json({
-//         success: false,
-//         message: `Could not find course with id: ${courseId}`,
-//       })
-//     }
 
-//     if (courseDetails.status === "Draft") {
-//       return res.status(403).json({
-//         success: false,
-//         message: `Accessing a draft course is forbidden`,
-//       })
-//     }
-
-//     return res.status(200).json({
-//       success: true,
-//       data: courseDetails,
-//     })
-//   } catch (error) {
-//     return res.status(500).json({
-//       success: false,
-//       message: error.message,
-//     })
-//   }
-// }
 exports.getCourseDetails = async (req, res) => {
   try {
     const { courseId } = req.body
@@ -369,8 +347,6 @@ exports.getFullCourseDetails = async (req, res) => {
       courseID: courseId,
       userId: userId,
     })
-
-    console.log("courseProgressCount : ", courseProgressCount)
 
     if (!courseDetails) {
       return res.status(400).json({
@@ -467,15 +443,35 @@ exports.deleteCourse = async (req, res) => {
         const subSections = section.subSection
         for (const subSectionId of subSections) {
           await SubSection.findByIdAndDelete(subSectionId)
+          await deleteChunk({
+            metadata: {
+              sourceType: "subsection",
+              sourceId: String(subSectionId),
+            }
+          })
+
         }
       }
 
       // Delete the section
       await Section.findByIdAndDelete(sectionId)
+      await deleteChunk({
+        metadata: {
+          sourceType: "section",
+          sourceId: String(sectionId),
+        }
+      })
     }
 
     // Delete the course
     await Course.findByIdAndDelete(courseId)
+
+    await deleteChunk({
+      metadata: {
+        sourceType: "course",
+        sourceId: String(courseId),
+      }
+    })
 
     return res.status(200).json({
       success: true,

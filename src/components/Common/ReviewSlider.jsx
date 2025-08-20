@@ -6,16 +6,13 @@ import "swiper/css/free-mode"
 import "swiper/css/pagination"
 import { Autoplay, Navigation } from 'swiper'
 import ReviewCard from './ReviewCard';
-import toast from 'react-hot-toast';
 import { fetchAllReviews } from '../../services/operations/reviewsAPI';
 
 export default function ReviewSlider() {
   const [reviews, setReviews] = useState([]);
-  const [loading, setLoading] = useState(false);
   useEffect(() => {
     const getAllReviews = async () => {
       const response = await fetchAllReviews()
-      // console.log("review data......", response);
       if (response?.data?.success) {
         setReviews(response.data.data);
       }

@@ -4,11 +4,8 @@ const crypto = require("crypto")
 const User = require("../models/User")
 const mailSender = require("../utils/mailSender")
 const mongoose = require("mongoose")
-const {
-  courseEnrollmentEmail,
-} = require("../mail/templates/courseEnrollmentEmail")
-const { paymentSuccessEmail } = require("../mail/templates/paymentSuccessEmail")
 const CourseProgress = require("../models/CourseProgress")
+const { courseEnrollmentEmail, paymentSuccessEmail } = require("../utils/emailTemplate")
 
 // Capture the payment and initiate the Razorpay order
 exports.capturePayment = async (req, res) => {
@@ -58,13 +55,12 @@ exports.capturePayment = async (req, res) => {
   try {
     // Initiate the payment using Razorpay
     const paymentResponse = await instance.orders.create(options)
-    console.log(paymentResponse)
     res.json({
       success: true,
       data: paymentResponse,
     })
   } catch (error) {
-    console.log(error)
+    console.log('Error is:', error)
     res
       .status(500)
       .json({ success: false, message: "Could not initiate order." })
@@ -160,7 +156,6 @@ const enrollStudents = async (courses, userId, res) => {
           .status(500)
           .json({ success: false, error: "Course not found" })
       }
-      console.log("Updated course: ", enrolledCourse)
 
       const courseProgress = await CourseProgress.create({
         courseID: courseId,
@@ -179,9 +174,8 @@ const enrollStudents = async (courses, userId, res) => {
         { new: true }
       )
 
-      console.log("Enrolled student: ", enrolledStudent)
       // Send an email notification to the enrolled student
-      const emailResponse = await mailSender(
+      await mailSender(
         enrolledStudent.email,
         `Successfully Enrolled into ${enrolledCourse.courseName}`,
         courseEnrollmentEmail(
@@ -189,8 +183,6 @@ const enrollStudents = async (courses, userId, res) => {
           `${enrolledStudent.firstName} ${enrolledStudent.lastName}`
         )
       )
-
-      console.log("Email sent successfully: ", emailResponse.response)
     } catch (error) {
       console.log(error)
       return res.status(400).json({ success: false, error: error.message })

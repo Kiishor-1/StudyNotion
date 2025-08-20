@@ -1,6 +1,8 @@
 const Section = require("../models/Section")
 const Course = require("../models/Course")
 const SubSection = require("../models/Subsection")
+const { upsertChunk, updateChunk, deleteChunk } = require("../utils/query")
+const { compactJoin } = require("../utils/aiUtils")
 // CREATE a new section
 exports.createSection = async (req, res) => {
   try {
@@ -36,6 +38,21 @@ exports.createSection = async (req, res) => {
       })
       .exec()
 
+    await upsertChunk({
+      text: compactJoin([
+        `Course: ${updatedCourse.courseName}`,
+        `Section: ${newSection.sectionName}`,
+      ]),
+      metadata: {
+        sourceType: "section",
+        sourceId: String(newSection._id),
+        sectionId: String(newSection._id),
+        sectionName: newSection.sectionName,
+        courseId,
+        courseName: updatedCourse.courseName,
+      },
+    });
+
     // Return the updated course object in the response
     res.status(200).json({
       success: true,
@@ -69,7 +86,20 @@ exports.updateSection = async (req, res) => {
         },
       })
       .exec()
-    console.log(course)
+    await updateChunk({
+      text: compactJoin([
+        `Course: ${course.courseName}`,
+        `Section: ${section.sectionName}`,
+      ]),
+      metadata: {
+        sourceType: "section",
+        sourceId: String(section._id),
+        sectionId: String(section._id),
+        sectionName: section.sectionName,
+        courseId,
+        courseName: course.courseName,
+      },
+    })
     res.status(200).json({
       success: true,
       message: section,
@@ -95,7 +125,7 @@ exports.deleteSection = async (req, res) => {
       },
     })
     const section = await Section.findById(sectionId)
-    console.log(sectionId, courseId)
+
     if (!section) {
       return res.status(404).json({
         success: false,
@@ -103,7 +133,16 @@ exports.deleteSection = async (req, res) => {
       })
     }
     // Delete the associated subsections
-    await SubSection.deleteMany({ _id: { $in: section.subSection } })
+    for (const subSectionId of section.subSection) {
+      await SubSection.findByIdAndDelete(subSectionId)
+
+      await deleteChunk({
+        metadata: {
+          sourceType: "subsection",
+          sourceId: String(subSectionId),
+        }
+      })
+    }
 
     await Section.findByIdAndDelete(sectionId)
 
@@ -116,6 +155,13 @@ exports.deleteSection = async (req, res) => {
         },
       })
       .exec()
+
+    await deleteChunk({
+      metadata: {
+        sourceType: "section",
+        sourceId: String(section._id),
+      }
+    })
 
     res.status(200).json({
       success: true,

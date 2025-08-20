@@ -1,6 +1,8 @@
 const RatingAndReview = require("../models/RatingandReview")
 const Course = require("../models/Course")
 const mongoose = require("mongoose")
+const { upsertChunk } = require("../utils/query")
+const { compactJoin } = require("../utils/aiUtils")
 
 // Create a new rating and review
 exports.createRating = async (req, res) => {
@@ -50,6 +52,22 @@ exports.createRating = async (req, res) => {
       },
     })
     await courseDetails.save()
+
+    await upsertChunk({
+      text: compactJoin([
+        `Course: ${courseDetails.courseName}`,
+        `Learner feedback: "${ratingReview.review}"`,
+        typeof ratingReview.rating === "number" ? `Rating: ${ratingReview.rating} stars` : null,
+      ]),
+      metadata: {
+        sourceType: "review",
+        courseId,
+        courseName: courseDetails.courseName,
+        rating: ratingReview.rating,
+        userId,
+        sourceId: String(courseId)
+      },
+    });
 
     return res.status(201).json({
       success: true,
