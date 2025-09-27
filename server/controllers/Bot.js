@@ -24,7 +24,7 @@ const {
 const technicalFaqs = require("../utils/faqs");
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const CHAT_MODEL = process.env.MODEL || "gemini-1.5-flash";
+const CHAT_MODEL = process.env.MODEL || "gemini-2.5-flash";
 const genAI = GEMINI_API_KEY ? new GoogleGenerativeAI(GEMINI_API_KEY) : null;
 const chatModel = genAI ? genAI.getGenerativeModel({ model: CHAT_MODEL }) : null;
 

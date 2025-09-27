@@ -5,6 +5,7 @@ const Query = require("../models/Query");
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const EMBEDDING_MODEL = process.env.EMBEDDING_MODEL || "gemini-embedding-001";
 const genAI = GEMINI_API_KEY ? new GoogleGenerativeAI(GEMINI_API_KEY) : null;
+const AIModel= process.env.MODEL || "gemini-2.5-flash";
 
 // -------------------------
 // Vector / Embedding Utils
@@ -85,7 +86,7 @@ async function normalizeQueryText(rawText) {
 
   try {
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: AIModel });
     const result = await model.generateContent(prompt);
     const corrected = (result?.response?.text() || "").trim();
     return corrected || original;
