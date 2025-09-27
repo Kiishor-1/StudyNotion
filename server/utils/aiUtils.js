@@ -3,7 +3,7 @@ const crypto = require("crypto");
 const Query = require("../models/Query");
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const EMBEDDING_MODEL = process.env.EMBEDDING_MODEL || "embedding-001";
+const EMBEDDING_MODEL = process.env.EMBEDDING_MODEL || "gemini-embedding-001";
 const genAI = GEMINI_API_KEY ? new GoogleGenerativeAI(GEMINI_API_KEY) : null;
 
 // -------------------------
